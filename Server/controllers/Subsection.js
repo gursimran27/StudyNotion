@@ -1,7 +1,7 @@
 
 const SubSection = require("../models/SubSection")
 const Section = require("../models/Section")
-const {uploadImageToCloudianry} = require("../utils/imageUploader")
+const {uploadImageToCloudinary} = require("../utils/imageUploader")
 require("dotenv").config()
 
 
@@ -25,7 +25,7 @@ exports.createSubSection = async(req, res)=>{
             )}
 
         // upload video to cloudinary
-        const uploadDetails = await uploadImageToCloudianry( video , process.env.FOLDER_NAME);
+        const uploadDetails = await uploadImageToCloudinary( video , process.env.FOLDER_NAME);
  
         // create subSection
         const subSectionDetails = await SubSection.create(
@@ -39,7 +39,7 @@ exports.createSubSection = async(req, res)=>{
         // store the id of subSection in Section Schema
         const updatedSection = await Section.findByIdAndUpdate( sectionId , {
             $push:{
-                "subSections":subSectionDetails._id
+                "subSection":subSectionDetails._id
             }
         } , {new:true}).populate("subSection").exec()
 
@@ -70,9 +70,10 @@ exports.createSubSection = async(req, res)=>{
 exports.updatedSubSection = async (req , res)=>{
     try {
 
-        const { sectionId , title , description } = req.body;
+        const { sectionId , subSectionId , title , description } = req.body;
 
-        const subSection = await SubSection.findById(sectionId);
+        const subSection = await SubSection.findById(subSectionId);
+        // console.log(`subSection ${subSection}`);
 
         if(!subSection){
             return res.status(404).json(
@@ -88,26 +89,39 @@ exports.updatedSubSection = async (req , res)=>{
         }
 
         if(subSection.description !== undefined){
-            subSection.description  = description
+            subSection.description = description
         }
 
         if(req.files && req.files.video !== undefined){
             const video = req.files.video;
-            const uploadDetails = await uploadImageToCloudianry(
+            console.log(video);
+            console.log(`UPLOADING TO MEDIA SERVER`);
+            const uploadDetails = await uploadImageToCloudinary(
                 video,
                 process.env.FOLDER_NAME,
             )
-            SubSection.videoUrl = uploadDetails.secure_url;
-            SubSection.timeDuration = uploadDetails?.duration;
+            // console.log(uploadDetails);
+            subSection.videoUrl = uploadDetails.secure_url;
+            console.log(`secure url is${uploadDetails.secure_url}`);
+            subSection.timeDuration = `${uploadDetails.duration}`;
+            console.log(`SUCCESSFULLY UPLOADED TO MEDIA SERVER`);
         }
 
         // DB save
         await subSection.save();
 
+        const updatedSection = await Section.findById(
+            sectionId,
+            {new:true}
+        )
+        .populate("subSection")
+        .exec();
+
         return res.status(200).json(
             {
                 success:true,
                 message:`Section updated successfully`,
+                data: updatedSection
             }
         )
 

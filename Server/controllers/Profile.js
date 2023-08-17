@@ -1,6 +1,7 @@
 
 const Profile = require("../models/Profile")
 const User = require("../models/User")
+const Course = require("../models/Course")
 const { uploadImageToCloudinary } = require("../utils/imageUploader")
 
 
@@ -98,6 +99,13 @@ exports.deleteAccount = async ( req , res ) =>{
         await Profile.findByIdAndDelete({_id:userDetails?.additonalDetails});
         
         // TODO update the enrolledAccount in Course model
+        for (const courseId of userDetails.courses) {
+            await Course.findByIdAndUpdate(
+              courseId,
+              { $pull: { studentsEnrolled: userId } },
+              { new: true }
+            )
+          }
         
         // delete user
         await User.findByIdAndDelete({_id:userId}) 
@@ -108,7 +116,6 @@ exports.deleteAccount = async ( req , res ) =>{
             {
                 success:true,
                 message:`User deleted successfully`,
-                profileDetails
             }
         )
 
@@ -142,7 +149,7 @@ exports.getUserDetails = async ( req , res )=>{
         const userId = req?.user?.id;
 
         // validation ->user with that id exist or not
-        const userDetails = await User.findById(userId).populate("additionalDetails").exec();
+        const userDetails = await User.findById(userId).populate("additonalDetails").exec();
 		console.log(userDetails);
 
         if(!userDetails)(400).json(

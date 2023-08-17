@@ -1,6 +1,8 @@
 
 const Section = require("../models/Section");
+const subSection = require("../models/SubSection");
 const Course = require("../models/Course");
+const SubSection = require("../models/SubSection");
 
 
 // *create section handler func
@@ -34,7 +36,7 @@ exports.createSection = async (req , res)=>{
             }, {new:true}).populate({
                 path:'courseContent',
                 populate:{
-                    path:'subSections'
+                    path:'subSection'
                 },
             }).exec()
             // TODO use populate to replace section and subSection in the updatedCourseDetails?
@@ -89,7 +91,7 @@ exports.updateSection = async (req,res)=>{
             {
                 success:true,
                 message:"section updated successfully",
-                updatedCourseDetails
+                updatedSection
             }
         )
 
@@ -98,7 +100,7 @@ exports.updateSection = async (req,res)=>{
         return res.status(500).json(
             {
                 success:false,
-                message:`Unable to create section`,
+                message:`Unable to delete section`,
                 error:error.message
             }
         )
@@ -112,11 +114,11 @@ exports.updateSection = async (req,res)=>{
 exports.deleteSection = async(req , res)=>{
     try {
         
-        // get ID -> assuming that we are sending id in params
-        const { sectionId } = req.params
+        // TODO  get ID -> test with req.params
+        const { sectionId , courseId } = req.body
 
         // validation
-        if( !sectionId ){
+        if( !sectionId , !courseId ){
             return res.status(400).json(
                 {
                     success:false,
@@ -124,11 +126,26 @@ exports.deleteSection = async(req , res)=>{
                 }
             )}
 
+        // get section
+        const section = await Section.findById(sectionId);
+
+        // update the course
+        await Course.findByIdAndUpdate(
+            {_id:courseId},
+            {$pull:{courseContent:sectionId}},
+            {new:true}
+        )
+
+        // remove all the associated sub-sections
+        // await SubSection.deleteMany({_id: {$in: section.subSection}});
+        // or
+        for(subS of section?.subSection){
+            await SubSection.findByIdAndDelete(subS)
+        }
     
-        // update krdo
+        // now delete section
            await Section.findByIdAndDelete( sectionId )
                 
-        // TODO : do we need to delete the entry(id) from the course schema or not
 
         // return res
         return res.status(200).json(
@@ -142,7 +159,7 @@ exports.deleteSection = async(req , res)=>{
         return res.status(500).json(
             {
                 success:false,
-                message:`Unable to create section`,
+                message:`Unable to delete section`,
                 error:error.message
             }
         )

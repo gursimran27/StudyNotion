@@ -16,7 +16,7 @@ exports.createCourse = async (req , res)=>{
             courseDescription,
             whatYouWillLearn,
             price,
-            category, // category here is id
+            category, // category here is id given by frontend
             tag,
             status,
             instructions,
@@ -59,7 +59,7 @@ exports.createCourse = async (req , res)=>{
         }
 
         // check given Category is valid or not
-        // !doubt-> category is id or not
+        // !doubt-> category is id given by frontend
         const categoryDetails = await Category.findById(category);
         if(!categoryDetails){
             return res.status(404).json(
@@ -99,7 +99,7 @@ exports.createCourse = async (req , res)=>{
 
 
         // update the Category Schema with new course id
-        // TODO 
+        // TODO ->done
         await Category.findByIdAndUpdate({_id:categoryDetails?._id}, {
             $push:{
                 courses : newCourse?._id,
@@ -194,7 +194,7 @@ exports.getCourseDetails = async ( req , res )=>{
             {
                 path:'instructor',
                 populate :{//inside User
-                    path:"additionalDetails"
+                    path:"additonalDetails"
                 },
             }
         )
@@ -223,7 +223,7 @@ exports.getCourseDetails = async ( req , res )=>{
         return res.status(200).json(
             {
                 success:true,
-                message:`Could not find the course with ${courseId}`,
+                message:`Course details of ${courseId}`,
                 data:courseDetails
             }
         )
